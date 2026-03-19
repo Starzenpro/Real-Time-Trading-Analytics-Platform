@@ -1,0 +1,92 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AZURE_WEBAPP_NAME: trading-analytics-api
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=src --cov-report=xml
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+
+  deploy-dev:
+    needs: test
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy Infrastructure
+      run: |
+        cd infrastructure/terraform
+        terraform init
+        terraform apply -auto-approve \
+          -var="environment=dev" \
+          -var="sql_admin_username=${{ secrets.SQL_ADMIN_USERNAME }}" \
+          -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}"
+
+  deploy-prod:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy Infrastructure
+      run: |
+        cd infrastructure/terraform
+        terraform init
+        terraform apply -auto-approve \
+          -var="environment=prod" \
+          -var="sql_admin_username=${{ secrets.SQL_ADMIN_USERNAME }}" \
+          -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}"
+    
+    - name: Deploy API
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: .
+    
+    - name: Run Database Migrations
+      run: |
+        python scripts/deploy-sql-dw.py --environment prod
