@@ -2,20 +2,72 @@ MIT License
 
 Copyright (c) 2026 Katleho King Tsilete
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+#### **`Makefile`**
+```makefile
+.PHONY: help setup generate-data run-pipeline run-api test docker-build deploy-azure
+
+help:
+	@echo "📈 Trading Analytics Platform Commands"
+	@echo ""
+	@echo "Setup & Development:"
+	@echo "  make setup              - Install dependencies"
+	@echo "  make generate-data       - Generate sample trading data"
+	@echo "  make run-pipeline        - Run the data pipeline"
+	@echo "  make run-api             - Start FastAPI server"
+	@echo "  make test                - Run tests"
+	@echo ""
+	@echo "Azure Deployment:"
+	@echo "  make azure-login         - Login to Azure"
+	@echo "  make deploy-infra         - Deploy Azure infrastructure"
+	@echo "  make deploy-sql           - Deploy SQL schema"
+	@echo "  make deploy-all           - Deploy everything"
+	@echo ""
+	@echo "Docker:"
+	@echo "  make docker-build        - Build Docker image"
+	@echo "  make docker-up            - Start Docker containers"
+	@echo "  make docker-down          - Stop Docker containers"
+
+setup:
+	pip install --upgrade pip
+	pip install -r requirements.txt
+
+generate-data:
+	python scripts/generate_sample_data.py
+
+run-pipeline:
+	python scripts/run_pipeline.py
+
+run-api:
+	uvicorn src.api.trading_api:app --reload --host 0.0.0.0 --port 8000
+
+test:
+	pytest tests/ -v --cov=src
+
+azure-login:
+	az login
+	az account show
+
+deploy-infra:
+	cd infrastructure/terraform && terraform init && terraform apply -auto-approve
+
+deploy-sql:
+	python scripts/deploy-sql-dw.py
+
+deploy-all: deploy-infra deploy-sql
+
+docker-build:
+	docker build -t trading-analytics .
+
+docker-up:
+	docker-compose up -d
+
+docker-down:
+	docker-compose down
+
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name "*.log" -delete
