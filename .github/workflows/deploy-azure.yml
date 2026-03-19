@@ -13,6 +13,9 @@ on:
           - test
           - prod
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -34,22 +37,3 @@ jobs:
           -var="environment=${{ github.event.inputs.environment }}" \
           -var="sql_admin_username=${{ secrets.SQL_ADMIN_USERNAME }}" \
           -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" || true
-    
-    - name: Deploy Application
-      run: |
-        # Build and deploy application
-        docker build -t trading-analytics:${{ github.sha }} .
-        
-        # Push to Azure Container Registry
-        az acr login --name ${{ secrets.ACR_NAME }}
-        docker tag trading-analytics:${{ github.sha }} ${{ secrets.ACR_NAME }}.azurecr.io/trading-analytics:${{ github.sha }}
-        docker push ${{ secrets.ACR_NAME }}.azurecr.io/trading-analytics:${{ github.sha }}
-        
-        # Deploy to Azure Container Instances
-        az container create \
-          --resource-group rg-trading-analytics-${{ github.event.inputs.environment }} \
-          --name trading-analytics-api \
-          --image ${{ secrets.ACR_NAME }}.azurecr.io/trading-analytics:${{ github.sha }} \
-          --cpu 2 \
-          --memory 4 \
-          --ports 8000 || true
