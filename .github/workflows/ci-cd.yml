@@ -89,5 +89,10 @@ jobs:
         package: .
     
     - name: Run Database Migrations
+    - name: Run tests
+      run: |
+        chmod +x scripts/run_tests.sh
+        ./scripts/run_tests.sh
+    
       run: |
         python scripts/deploy-sql-dw.py --environment prod || true
