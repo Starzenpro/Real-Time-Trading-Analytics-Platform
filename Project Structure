@@ -1,0 +1,80 @@
+trading-analytics-platform/
+│
+├── .github/
+│   └── workflows/
+│       ├── ci-cd.yml                    # GitHub Actions CI/CD
+│       └── deploy-azure.yml              # Azure deployment
+│
+├── .devcontainer/
+│   └── devcontainer.json                  # Codespaces setup
+│
+├── src/
+│   ├── ingestion/
+│   │   ├── __init__.py
+│   │   ├── market_data_ingestor.py        # Real-time market data
+│   │   ├── trade_ingestor.py              # Trade data ingestion
+│   │   └── reference_data.py               # Static reference data
+│   │
+│   ├── processing/
+│   │   ├── __init__.py
+│   │   ├── risk_calculator.py              # VaR, Greeks calculations
+│   │   ├── pnl_processor.py                 # P&L calculations
+│   │   └── compliance_checker.py            # Regulatory checks
+│   │
+│   ├── analytics/
+│   │   ├── __init__.py
+│   │   ├── market_analytics.py              # Market trends
+│   │   ├── portfolio_analytics.py           # Portfolio performance
+│   │   └── risk_metrics.py                   # Risk dashboards
+│   │
+│   ├── storage/
+│   │   ├── __init__.py
+│   │   ├── azure_sql_connector.py           # Azure SQL connection
+│   │   └── data_warehouse.py                 # DW operations
+│   │
+│   └── api/
+│       ├── __init__.py
+│       ├── trading_api.py                    # FastAPI endpoints
+│       └── websocket_server.py                # Real-time updates
+│
+├── notebooks/
+│   ├── market_analysis.ipynb                 # Jupyter analysis
+│   └── risk_modeling.ipynb                    # Risk models
+│
+├── scripts/
+│   ├── setup-azure.sh                         # Azure setup script
+│   ├── deploy-sql-dw.sql                       # SQL DW schema
+│   ├── generate_sample_data.py                  # Test data generator
+│   └── run_pipeline.py                           # Main pipeline
+│
+├── tests/
+│   ├── test_ingestion.py
+│   ├── test_processing.py
+│   └── test_risk_calculations.py
+│
+├── infrastructure/
+│   ├── terraform/
+│   │   ├── main.tf                              # Azure infrastructure
+│   │   ├── variables.tf
+│   │   └── outputs.tf
+│   └── arm-templates/
+│       └── azure-deploy.json                     # ARM template
+│
+├── dashboard/
+│   └── powerbi/
+│       ├── trading_dashboard.pbix                # Power BI template
+│       └── risk_report.pbix
+│
+├── config/
+│   ├── azure_config.json                          # Azure settings
+│   ├── trading_config.yaml                         # Trading parameters
+│   └── logging.conf                                 # Logging config
+│
+├── .env.example
+├── .gitignore
+├── requirements.txt
+├── Makefile
+├── docker-compose.yml
+├── Dockerfile
+├── azure-pipelines.yml
+└── README.md
