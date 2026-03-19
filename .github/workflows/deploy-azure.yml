@@ -1,0 +1,55 @@
+name: Deploy to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Deploy Infrastructure
+      run: |
+        cd infrastructure/terraform
+        terraform init
+        terraform apply -auto-approve \
+          -var="environment=${{ github.event.inputs.environment }}" \
+          -var="sql_admin_username=${{ secrets.SQL_ADMIN_USERNAME }}" \
+          -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}"
+    
+    - name: Deploy Application
+      run: |
+        # Build and deploy application
+        docker build -t trading-analytics:${{ github.sha }} .
+        
+        # Push to Azure Container Registry
+        az acr login --name ${{ secrets.ACR_NAME }}
+        docker tag trading-analytics:${{ github.sha }} ${{ secrets.ACR_NAME }}.azurecr.io/trading-analytics:${{ github.sha }}
+        docker push ${{ secrets.ACR_NAME }}.azurecr.io/trading-analytics:${{ github.sha }}
+        
+        # Deploy to Azure Container Instances
+        az container create \
+          --resource-group rg-trading-analytics-${{ github.event.inputs.environment }} \
+          --name trading-analytics-api \
+          --image ${{ secrets.ACR_NAME }}.azurecr.io/trading-analytics:${{ github.sha }} \
+          --cpu 2 \
+          --memory 4 \
+          --ports 8000
